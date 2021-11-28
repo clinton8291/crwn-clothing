@@ -10,17 +10,45 @@ import Header from "./components/header/header.component";
 
 import SigninSignupPage from "./pages/signin-signup-page/signin-signup-page.component";
 
+import styled from "styled-components";
+
 import { connect } from "react-redux";
 
 import { setCurrentUser } from "./redux/user/user.actions";
 
-import { auth, createUserProfileDocument } from "./firebase/firebase.utils";
+import { auth, createUserProfileDocument, addCollectionsAndItems } from "./firebase/firebase.utils";
+
+import { selectShopCollectionForPreview } from "./redux/shop/shop.selectors";
+
+import { selectCurrentUser } from "./redux/user/user.selectors";
+
+import { createStructuredSelector } from "reselect";
+
+const Text = styled.div`
+  color: white;
+  padding: 10px;
+  border:  ${({isActive}) => isActive ? '1px solid green':'3px dotted lightgreen' }
+`;
+
+const textStyle = {
+  backgroundColor: "#41c346",
+  fontSize: "18px",
+};
+
+const StyledComponent = () => {
+  return (
+    <div style={textStyle}>
+      <Text isActive={false}>Clinton Antony Cardoza</Text>
+    </div>
+  );
+};
 
 class App extends React.Component {
   unsubscribeFromAuth = null;
 
   componentDidMount() {
-    const { setCurrentUser } = this.props;
+    const { setCurrentUser, collectionsArray } = this.props;
+    console.log(selectShopCollectionForPreview);
     this.unsubscribeFromAuth = auth.onAuthStateChanged(async (userAuth) => {
       if (userAuth) {
         const userRef = await createUserProfileDocument(userAuth); //This returns a documentRef object
@@ -32,6 +60,8 @@ class App extends React.Component {
         });
       }
       setCurrentUser(userAuth); //Setting current user to null
+
+      addCollectionsAndItems('collections', collectionsArray.map(({title, items}) => ({title, items})));
     }); //Subscribing to auth object, this subscription is always listening to auth
   }
 
@@ -42,12 +72,12 @@ class App extends React.Component {
   render() {
     return (
       <div>
-        
         <Header />
+        <StyledComponent />
         <Switch>
           <Route exact path='/' component={HomePage} />
           <Route path='/shop' component={ShopPage} />
-          <Route exact path="/checkout" component={CheckoutPage} />
+          <Route exact path='/checkout' component={CheckoutPage} />
           <Route
             exact
             path='/signin'
@@ -65,8 +95,9 @@ class App extends React.Component {
   }
 }
 
-const mapStateToProps = ({ user }) => ({
-  currentUser: user.currentUser,
+const mapStateToProps = createStructuredSelector({
+  currentUser: selectCurrentUser,
+  collectionsArray: selectShopCollectionForPreview
 });
 
 const mapDispatchToProps = (dispatch) => ({
